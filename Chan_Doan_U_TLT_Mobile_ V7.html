@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>PI-RADS v2.1 Expert - BS. Huynh</title>
+    <style>
+        :root { --p: #1b5e20; --s: #2e7d32; --bg: #f4f7f6; --text: #333; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); }
+        
+        /* Header App */
+        .app-header { background: var(--p); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .app-header h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; }
+        .app-header p { margin: 3px 0 0; font-size: 11px; opacity: 0.8; }
+
+        .container { padding: 15px 15px 120px 15px; max-width: 600px; margin: auto; }
+        
+        /* Thông báo Tip */
+        .tip-box { background: #fff9c4; border: 1px solid #fbc02d; padding: 10px; border-radius: 8px; font-size: 12px; margin-bottom: 15px; line-height: 1.4; }
+
+        /* Card Style */
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid var(--p); }
+        .card-title { font-size: 13px; font-weight: 700; color: var(--p); margin-bottom: 15px; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #555; }
+        select, input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; box-sizing: border-box; background: #fafafa; -webkit-appearance: none; }
+        
+        /* Kết quả nhanh trên màn hình */
+        #quickResult { display: none; background: #e8f5e9; border: 2px solid var(--p); border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; animation: slideIn 0.3s ease-out; }
+        @keyframes slideIn { from { transform: translateY(-10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Thanh công cụ dưới cùng */
+        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px 15px; display: flex; gap: 8px; box-shadow: 0 -2px 15px rgba(0,0,0,0.1); z-index: 1000; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+        .btn { flex: 1; padding: 15px 5px; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; text-align: center; color: white; transition: 0.2s; }
+        .btn-reset { background: #78909c; }
+        .btn-exe { background: var(--p); }
+        .btn-pdf { background: #0277bd; }
+
+        /* Giao diện Báo cáo IN PDF (Ẩn trên màn hình) */
+        #pdfReport { display: none; padding: 40px; background: white; font-family: "Times New Roman", serif; color: black; }
+        @media print {
+            .app-header, .container, .bottom-bar, .tip-box { display: none !important; }
+            #pdfReport { display: block !important; }
+            body { background: white; }
+        }
+        .report-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 25px; }
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .report-table td { border: 1px solid #ddd; padding: 10px; font-size: 15px; }
+        .res-highlight { border: 2px solid #000; padding: 20px; margin: 20px 0; border-radius: 8px; background: #f9f9f9; }
+    </style>
+</head>
+<body>
+
+<div class="app-header">
+    <h1>PI-RADS v2.1 CALCULATOR</h1>
+    <p>BS. Vũ Thế Huynh | Thực hiện: 08/05/2026</p>
+</div>
+
+<div class="container">
+    <div class="tip-box">
+        <strong>💡 Tổn thương lan tỏa 2 vùng (PZ & TZ):</strong> Hãy chọn vùng chiếm ưu thế về thể tích hoặc vùng có đặc điểm hình ảnh nghi ngờ ác tính cao nhất để đánh giá.
+    </div>
+
+    <div id="quickResult">
+        <h2 id="qTitle" style="margin:0; color:var(--p); font-size:28px;">PI-RADS X</h2>
+        <p id="qDesc" style="margin:10px 0 0; font-weight: 600; color: #2e7d32;"></p>
+    </div>
+
+    <div class="card">
+        <div class="card-title">1. Thông tin bệnh nhân</div>
+        <input type="text" id="pName" placeholder="Họ tên bệnh nhân...">
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="pID" placeholder="Mã ID">
+            <input type="number" id="pPSA" placeholder="PSA (ng/mL)">
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">2. Phân vùng tổn thương</div>
+        <label>Vùng giải phẫu (Zone):</label>
+        <select id="zone">
+            <option value="PZ">Peripheral Zone (PZ) - Ưu tiên DWI</option>
+            <option value="TZ">Transition Zone (TZ) - Ưu tiên T2W</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <div class="card-title">3. Thang điểm chuỗi xung</div>
+        
+        <label>Điểm T2W:</label>
+        <select id="t2w">
+            <option value="1">1: Đồng tín hiệu / Bình thường</option>
+            <option value="2">2: PZ: Dải/Vệt; TZ: Nốt bao quanh</option>
+            <option value="3">3: Không điển hình (Nghi ngờ trung gian)</option>
+            <option value="4">4: Giảm tín hiệu rõ, giới hạn rõ (KT < 1.5cm)</option>
+            <option value="5">5: Giống 4 nhưng KT ≥ 1.5cm hoặc xâm lấn ngoài</option>
+        </select>
+
+        <label>Điểm DWI/ADC:</label>
+        <select id="dwi">
+            <option value="1">1: Không hạn chế khuếch tán</option>
+            <option value="2">2: Hạn chế khuếch tán dạng dải/không rõ</option>
+            <option value="3">3: Hạn chế mức độ trung bình</option>
+            <option value="4">4: Hạn chế rõ rệt (KT < 1.5cm)</option>
+            <option value="5">5: Hạn chế rõ rệt (KT ≥ 1.5cm hoặc xâm lấn)</option>
+        </select>
+
+        <label>DCE (Ngấm thuốc):</label>
+        <select id="dce">
+            <option value="neg">Âm tính (-)</option>
+            <option value="pos">Dương tính (+): Ngấm sớm, khu trú</option>
+        </select>
+    </div>
+</div>
+
+<div class="bottom-bar">
+    <button class="btn btn-reset" onclick="location.reload()">LÀM MỚI</button>
+    <button class="btn btn-exe" onclick="calculate()">CHẨN ĐOÁN</button>
+    <button class="btn btn-pdf" onclick="window.print()">XUẤT PDF</button>
+</div>
+
+<div id="pdfReport">
+    <div class="report-header">
+        <h2 style="margin:0;">KẾT QUẢ MRI TIỀN LIỆT TUYẾN (PI-RADS v2.1)</h2>
+        <p>Phần mềm hỗ trợ chẩn đoán bởi BS. Vũ Thế Huynh</p>
+    </div>
+
+    <table class="report-table">
+        <tr>
+            <td width="50%"><strong>Họ tên:</strong> <span id="rName"></span></td>
+            <td><strong>ID:</strong> <span id="rID"></span></td>
+        </tr>
+        <tr>
+            <td><strong>Ngày thực hiện:</strong> 08/05/2026</td>
+            <td><strong>PSA:</strong> <span id="rPSA"></span> ng/mL</td>
+        </tr>
+    </table>
+
+    <h3 style="border-bottom: 1px solid #000; padding-bottom: 5px;">ĐÁNH GIÁ HÌNH ẢNH:</h3>
+    <p>• Vùng khảo sát: <strong id="rZone"></strong></p>
+    <p>• Điểm T2W: <strong id="rT2"></strong>/5</p>
+    <p>• Điểm DWI/ADC: <strong id="rDW"></strong>/5</p>
+    <p>• Ngấm thuốc (DCE): <strong id="rDCE"></strong></p>
+
+    <div class="res-highlight">
+        <h3 style="margin-top:0;">KẾT LUẬN:</h3>
+        <h1 id="rFinal" style="margin:10px 0;"></h1>
+        <p id="rAdvise" style="font-weight:bold; font-style:italic; font-size: 16px;"></p>
+        <p id="rNote" style="color: #444; font-size: 14px; margin-top: 10px;"></p>
+    </div>
+
+    <div style="margin-top: 100px; display: flex; justify-content: space-between;">
+        <div style="font-size: 12px; color: #666;">Generated by PI-RADS Mobile Expert v2.1</div>
+        <div style="text-align: center;">
+            <p>Ngày 08 tháng 05 năm 2026</p>
+            <p><strong>Bác sĩ chuyên khoa</strong></p>
+            <br><br><br>
+            <strong>BS. Vũ Thế Huynh</strong>
+        </div>
+    </div>
+</div>
+
+<script>
+    function calculate() {
+        const zone = document.getElementById('zone').value;
+        const t2 = parseInt(document.getElementById('t2w').value);
+        const dw = parseInt(document.getElementById('dwi').value);
+        const dce = document.getElementById('dce').value;
+        
+        let score = 0;
+        let note = "";
+
+        // LOGIC PI-RADS v2.1 CHÍNH XÁC
+        if (zone === 'PZ') {
+            score = dw; // Ưu tiên DWI
+            if (dw === 3 && dce === 'pos') {
+                score = 4;
+                note = "Nâng cấp từ 3 lên 4 do DCE dương tính khu trú.";
+            }
+        } else {
+            score = t2; // Ưu tiên T2W
+            if (t2 === 2 && dw >= 4) {
+                score = 3;
+                note = "Nâng cấp từ 2 lên 3 do DWI hạn chế rõ rệt (v2.1).";
+            } else if (t2 === 3 && dw === 5) {
+                score = 4;
+                note = "Nâng cấp từ 3 lên 4 do điểm DWI là 5 (v2.1).";
+            }
+        }
+
+        const clinical = [
+            "",
+            "Rất thấp: Rất ít khả năng có ung thư đáng kể.",
+            "Thấp: Ít khả năng có ung thư đáng kể.",
+            "Trung bình: Khả năng có ung thư đáng kể còn nghi ngờ.",
+            "Cao: Có khả năng cao hiện diện ung thư đáng kể.",
+            "Rất cao: Rất có khả năng hiện diện ung thư đáng kể."
+        ];
+
+        // Cập nhật giao diện màn hình
+        document.getElementById('quickResult').style.display = "block";
+        document.getElementById('qTitle').innerText = "PI-RADS " + score;
+        document.getElementById('qDesc').innerText = clinical[score];
+        window.scrollTo({top: 0, behavior: 'smooth'});
+
+        // Cập nhật dữ liệu cho bản in PDF
+        document.getElementById('rName').innerText = document.getElementById('pName').value || "---";
+        document.getElementById('rID').innerText = document.getElementById('pID').value || "---";
+        document.getElementById('rPSA').innerText = document.getElementById('pPSA').value || "---";
+        document.getElementById('rZone').innerText = (zone === 'PZ' ? "Vùng ngoại biên (PZ)" : "Vùng chuyển tiếp (TZ)");
+        document.getElementById('rT2').innerText = t2;
+        document.getElementById('rDW').innerText = dw;
+        document.getElementById('rDCE').innerText = (dce === 'pos' ? "Dương tính (+)" : "Âm tính (-)");
+        document.getElementById('rFinal').innerText = "PI-RADS " + score;
+        document.getElementById('rAdvise').innerText = clinical[score];
+        document.getElementById('rNote').innerText = note;
+    }
+</script>
+
+</body>
+</html>

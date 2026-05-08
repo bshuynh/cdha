@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CAD-RADS 2.0 Expert - BS. Huynh</title>
+    <style>
+        :root { --p: #c62828; --s: #b71c1c; --bg: #fdf2f2; --text: #333; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; padding: 0; color: var(--text); -webkit-tap-highlight-color: transparent; }
+        
+        .app-header { background: var(--p); color: white; padding: 15px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .app-header h1 { margin: 0; font-size: 18px; text-transform: uppercase; }
+        .app-header p { margin: 3px 0 0; font-size: 11px; opacity: 0.8; }
+
+        .container { padding: 15px 15px 120px 15px; max-width: 600px; margin: auto; }
+        
+        /* Hướng dẫn lâm sàng phía trên */
+        .instruction-box { background: #fff9c4; border: 1px solid #fbc02d; padding: 12px; border-radius: 10px; font-size: 12px; margin-bottom: 15px; line-height: 1.5; color: #5d4037; }
+        .instruction-box strong { color: #d32f2f; }
+
+        .card { background: white; border-radius: 12px; padding: 18px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid var(--p); }
+        .card-title { font-size: 13px; font-weight: 700; color: var(--p); margin-bottom: 15px; text-transform: uppercase; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: #555; }
+        select, input[type="text"], input[type="date"] { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 8px; font-size: 15px; box-sizing: border-box; background: #fafafa; appearance: none; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .checkbox-group { display: flex; align-items: center; margin-bottom: 10px; padding: 12px; background: #fff5f5; border-radius: 8px; border: 1px solid #ffcdd2; cursor: pointer; }
+        .checkbox-group input[type="checkbox"] { width: 24px; height: 24px; margin-right: 12px; cursor: pointer; accent-color: var(--p); flex-shrink: 0; }
+        .checkbox-group label { margin: 0; cursor: pointer; flex-grow: 1; font-size: 14px; }
+
+        #quickResult { display: none; background: #ffebee; border: 2px solid var(--p); border-radius: 12px; padding: 20px; margin-bottom: 20px; text-align: center; }
+        
+        .bottom-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 12px 15px; display: flex; gap: 8px; box-shadow: 0 -2px 15px rgba(0,0,0,0.1); z-index: 1000; padding-bottom: calc(12px + env(safe-area-inset-bottom)); }
+        .btn { flex: 1; padding: 15px 5px; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; text-transform: uppercase; cursor: pointer; text-align: center; color: white; }
+        .btn-reset { background: #78909c; }
+        .btn-exe { background: var(--p); }
+        .btn-pdf { background: #0277bd; display: none; }
+
+        /* PDF */
+        #pdfReport { display: none; padding: 40px; background: white; font-family: "Times New Roman", serif; }
+        @media print {
+            .app-header, .container, .bottom-bar, .instruction-box { display: none !important; }
+            #pdfReport { display: block !important; }
+        }
+        .report-header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
+        .report-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        .report-table td { border: 1px solid #ddd; padding: 10px; font-size: 15px; }
+        .res-box { border: 2px solid #000; padding: 20px; margin-top: 20px; background: #f9f9f9; }
+    </style>
+</head>
+<body>
+
+<div class="app-header">
+    <h1>CAD-RADS 2.0 EXPERT</h1>
+    <p>BS. Vũ Thế Huynh | Phân loại Mạch vành</p>
+</div>
+
+<div class="container">
+    <div class="instruction-box">
+        <strong>💡 Hướng dẫn CAD-RADS 2.0:</strong>
+        <ul style="margin: 5px 0 0 15px; padding: 0;">
+            <li>Đánh giá dựa trên <strong>đoạn hẹp nặng nhất</strong> lòng mạch.</li>
+            <li>Chọn <strong>4B</strong> nếu: Hẹp Thân chung trái (LM) >50% HOẶC hẹp 3 nhánh >70%.</li>
+            <li>Ký hiệu bổ sung: <strong>P</strong> (Mảng xơ vữa nguy cơ cao), <strong>S</strong> (Stent), <strong>G</strong> (Cầu nối), <strong>I</strong> (Thiếu máu cục bộ).</li>
+        </ul>
+    </div>
+
+    <div id="quickResult">
+        <h2 id="qTitle" style="margin:0; color:var(--p); font-size:26px;">CAD-RADS X</h2>
+        <p id="qDesc" style="margin:10px 0 0; font-weight: 600;"></p>
+    </div>
+
+    <div class="card">
+        <div class="card-title">1. Thông tin bệnh nhân</div>
+        <input type="text" id="pName" placeholder="Họ và tên bệnh nhân...">
+        <div class="grid-2">
+            <div>
+                <label>Mã ID</label>
+                <input type="text" id="pID" placeholder="ID...">
+            </div>
+            <div>
+                <label>Ngày chụp</label>
+                <input type="date" id="pDate">
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">2. Mức độ hẹp nhất (Stenosis)</div>
+        <label>Chọn ngưỡng hẹp nặng nhất:</label>
+        <select id="stenosis">
+            <option value="0">0: Không hẹp (0%)</option>
+            <option value="1">1: Hẹp tối thiểu (1-24%)</option>
+            <option value="2">2: Hẹp nhẹ (25-49%)</option>
+            <option value="3">3: Hẹp trung bình (50-69%)</option>
+            <option value="4A">4A: Hẹp nặng (70-99%) - 1 hoặc 2 nhánh</option>
+            <option value="4B">4B: Left Main (>50%) hoặc 3 nhánh (>70%)</option>
+            <option value="5">5: Tắc hoàn toàn (100%)</option>
+            <option value="ND">ND: Không đánh giá được</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <div class="card-title">3. Ký hiệu bổ sung (Modifiers)</div>
+        <div class="checkbox-group" onclick="document.getElementById('modP').click()">
+            <input type="checkbox" id="modP" onclick="event.stopPropagation()">
+            <label><strong>P:</strong> Mảng xơ vữa nguy cơ cao</label>
+        </div>
+        <div class="checkbox-group" onclick="document.getElementById('modS').click()">
+            <input type="checkbox" id="modS" onclick="event.stopPropagation()">
+            <label><strong>S:</strong> Có Stent</label>
+        </div>
+        <div class="checkbox-group" onclick="document.getElementById('modG').click()">
+            <input type="checkbox" id="modG" onclick="event.stopPropagation()">
+            <label><strong>G:</strong> Có Cầu nối (Graft)</label>
+        </div>
+        <div class="checkbox-group" onclick="document.getElementById('modI').click()">
+            <input type="checkbox" id="modI" onclick="event.stopPropagation()">
+            <label><strong>I:</strong> Có Thiếu máu (Ischemia)</label>
+        </div>
+    </div>
+</div>
+
+<div class="bottom-bar">
+    <button class="btn btn-reset" onclick="location.reload()">LÀM MỚI</button>
+    <button class="btn btn-exe" onclick="calculate()">CHẨN ĐOÁN</button>
+    <button id="btnPdf" class="btn btn-pdf" onclick="window.print()">XUẤT PDF</button>
+</div>
+
+<div id="pdfReport">
+    <div class="report-header">
+        <h2 style="margin:0;">KẾT QUẢ PHÂN LOẠI CAD-RADS 2.0</h2>
+        <p>Hệ thống báo cáo và dữ liệu bệnh động mạch vành</p>
+    </div>
+    
+    <table class="report-table">
+        <tr>
+            <td width="50%"><strong>Bệnh nhân:</strong> <span id="rName"></span></td>
+            <td><strong>Mã ID:</strong> <span id="rID"></span></td>
+        </tr>
+        <tr>
+            <td><strong>Ngày chụp:</strong> <span id="rDateScan"></span></td>
+            <td><strong>BS thực hiện:</strong> Vũ Thế Huynh</td>
+        </tr>
+    </table>
+
+    <p>• Mức độ hẹp: <strong id="rSten"></strong></p>
+    <p>• Ký hiệu bổ sung: <strong id="rMods"></strong></p>
+    
+    <div class="res-box">
+        <h3 style="margin-top:0;">KẾT LUẬN:</h3>
+        <h1 id="rFinal" style="margin:10px 0;"></h1>
+        <p id="rAdvise" style="font-weight:bold; font-style:italic;"></p>
+    </div>
+    
+    <div style="margin-top: 60px; text-align: right;">
+        <p id="rDateReport"></p>
+        <strong>Bác sĩ chuyên khoa</strong><br><br><br>
+        <strong>BS. Vũ Thế Huynh</strong>
+    </div>
+</div>
+
+<script>
+    document.getElementById('pDate').valueAsDate = new Date();
+
+    function calculate() {
+        const s = document.getElementById('stenosis').value;
+        const p = document.getElementById('modP').checked;
+        const modS = document.getElementById('modS').checked;
+        const g = document.getElementById('modG').checked;
+        const i = document.getElementById('modI').checked;
+
+        let mods = [];
+        if (p) mods.push("P");
+        if (modS) mods.push("S");
+        if (g) mods.push("G");
+        if (i) mods.push("I");
+
+        let finalScore = "CAD-RADS " + s + (mods.length > 0 ? "/" + mods.join("") : "");
+        
+        const clinical = {
+            "0": "Không hẹp. Không cần điều trị chuyên biệt.",
+            "1": "Hẹp tối thiểu. Điều trị nội khoa dự phòng.",
+            "2": "Hẹp nhẹ. Điều trị nội khoa tối ưu.",
+            "3": "Hẹp trung bình. Xem xét FFR-CT hoặc Stress test.",
+            "4A": "Hẹp nặng. Hội chẩn can thiệp mạch vành (ICA).",
+            "4B": "Hẹp Thân chung/Đa nhánh. Chỉ định can thiệp sớm.",
+            "5": "Tắc hoàn toàn mạch vành.",
+            "ND": "Hình ảnh không đạt chất lượng chẩn đoán."
+        };
+
+        document.getElementById('quickResult').style.display = "block";
+        document.getElementById('qTitle').innerText = finalScore;
+        document.getElementById('qDesc').innerText = clinical[s];
+        document.getElementById('btnPdf').style.display = "block";
+        window.scrollTo({top: 0, behavior: 'smooth'});
+
+        document.getElementById('rName').innerText = document.getElementById('pName').value || "---";
+        document.getElementById('rID').innerText = document.getElementById('pID').value || "---";
+        document.getElementById('rDateScan').innerText = document.getElementById('pDate').value;
+        document.getElementById('rSten').innerText = document.getElementById('stenosis').options[document.getElementById('stenosis').selectedIndex].text;
+        document.getElementById('rMods').innerText = mods.join(", ") || "Không có";
+        document.getElementById('rFinal').innerText = finalScore;
+        document.getElementById('rAdvise').innerText = clinical[s];
+        
+        const d = new Date();
+        document.getElementById('rDateReport').innerText = `Ngày ${d.getDate()} tháng ${d.getMonth()+1} năm ${d.getFullYear()}`;
+    }
+</script>
+</body>
+</html>
